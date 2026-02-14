@@ -1,0 +1,31 @@
+services:
+  booking-history-service:
+    build:
+      context: results/booking-history-service
+      dockerfile: Dockerfile
+    container_name: booking-history-service
+    depends_on:
+      - kafka
+    ports:
+      - "9091:9090"
+    networks:
+      - hotelio-net
+  booking-history-db:
+    image: postgres:15
+    container_name:  booking-history-db
+    environment:
+      POSTGRES_USER: booking-history
+      POSTGRES_PASSWORD: booking-history
+      POSTGRES_DB: booking-history
+    ports:
+      - "5434:5432"
+    volumes:
+      - booking-history-db-data:/var/lib/postgresql/data
+    networks:
+      - hotelio-net
+volumes:
+  booking-history-db-data:
+
+networks:
+  hotelio-net:
+    external: true

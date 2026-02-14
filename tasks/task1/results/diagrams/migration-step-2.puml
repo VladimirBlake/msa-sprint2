@@ -1,0 +1,65 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+title "Этап миграции 2: Выделение остальных микросервисов из монолита Hotelio"
+
+Container(graphQLServer, "GraphQL Federation Server", "GraphQL Federation", "Шлюз для маршрутизации запросов между микросервисами")
+Container(reverseProxy, "Reverse Proxy", "Nginx", "Обратный прокси для авторизации, маршрутизации и кэширования")
+Container(hotelsMicroservice, "Hotels Microservice", "Spring Boot", "Микросервис для управления информацией о гостиницах")
+ContainerDb(hotelsDb, "Hotels DB", "PostgreSQL", "База данных для хранения информации о гостиницах")
+
+Container(promocodeMicroservice, "Promocode Microservice", "Spring Boot", "Микросервис для управления информацией о промо-кодах")
+ContainerDb(promoDb, "Promocode DB", "MongoDB", "База данных для хранения информации о промо-кодах")
+
+Container(reviewMicroservice, "Review Microservice", "Spring Boot", "Микросервис для управления информацией о отзывах")
+ContainerDb(reviewDb, "Review DB", "MongoDB", "База данных для хранения информации о отзывах")
+
+Container(userMicroservice, "User Microservice", "Spring Boot", "Микросервис для управления информацией о пользователях")
+ContainerDb(userDb, "User DB", "PostgreSQL", "База данных для хранения информации о пользователях")
+
+
+
+  Container(monolith, "Booking Microservice", "Spring Boot", "Ex-monolith app exposing REST endpoints for hotel booking") {
+
+    ' Controllers
+    Component(bookingController, "BookingController", "Spring MVC", "/api/bookings")
+
+    ' Services
+    Component(bookingService, "BookingService", "Java Service", "Validates and creates bookings")
+    Component(orchestratorService, "OrchestratorService", "Java Service", "Оркестрация вызовов микросервисов для создания бронирований")
+
+    ' DB
+    ComponentDb(postgres, "Booking DB", "PostgreSQL", "Stores bookings")
+
+    ' Controller-Service relations
+    Rel(bookingController, bookingService, "Uses")
+    Rel(bookingService, postgres, "Reads/Writes")
+  }
+
+
+Person(user, "User", "Interacts with frontend")
+
+Rel(graphQLServer, userMicroservice, "Proxies user-related requests from user")
+Rel(userMicroservice, userDb, "Reads/Writes user data to")
+
+Rel(graphQLServer, hotelsMicroservice, "Proxies hotel-related requests from user")
+Rel(hotelsMicroservice, hotelsDb, "Reads/Writes hotel data to")
+
+Rel(graphQLServer, promocodeMicroservice, "Proxies promocode-related requests from user")
+Rel(promocodeMicroservice, promoDb, "Reads/Writes promocode data to")
+
+Rel(graphQLServer, reviewMicroservice, "Proxies review-related requests from user")
+Rel(reviewMicroservice, reviewDb, "Reads/Writes review data to")
+
+Rel(user, reverseProxy, "Sends requests to")
+Rel(reverseProxy, graphQLServer, "Forwards requests to")
+
+Rel(bookingService, orchestratorService, "Delegates booking orchestration to")
+Rel(orchestratorService, userMicroservice, "Calls to validate user")
+Rel(orchestratorService, hotelsMicroservice, "Calls to get hotel info")
+Rel(orchestratorService, promocodeMicroservice, "Calls to apply promocode")
+Rel(orchestratorService, reviewMicroservice, "Calls to check reviews")
+
+Rel(graphQLServer, bookingController, "Proxies requests for booking")
+@enduml

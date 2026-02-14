@@ -1,0 +1,38 @@
+# Build results
+bin/
+obj/
+.vs/
+.vscode/
+*.user
+*.suo
+*.sln.docstates
+
+# NuGet
+*.nupkg
+*.snupkg
+packages/
+.nuget/
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Runtime
+appsettings.Development.json
+.env
+.env.local
+
+# Dependencies
+node_modules/
+
+# Coverage
+coverage/
+*.coverage
