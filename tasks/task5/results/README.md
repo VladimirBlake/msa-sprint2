@@ -30,7 +30,7 @@ kubectl label namespace default istio-injection=enabled
 
 Файл: `destination-rule.yaml`
 
-- **Outlier Detection** на уровне subset v1 и глобально: при 1 ошибке 5xx/gateway endpoint исключается на 60s
+- **Outlier Detection** на уровне subset v1 и глобально: при 1 ошибке 5xx/gateway endpoint исключается на 60 секунд
 - `maxEjectionPercent: 100` — при сбое все endpoint'ы v1 могут быть исключены, трафик уходит на v2
 - **Connection Pool** для v1: `maxRequestsPerConnection: 1`
 
@@ -38,8 +38,7 @@ kubectl label namespace default istio-injection=enabled
 
 Файл: `envoy-filter.yaml`
 
-- Lua-фильтр на sidecar: при наличии заголовка `X-Feature-Enabled: true` трафик направляется на v2
-- Маршрутизация на уровне Envoy VIRTUAL_HOST: match по заголовку → cluster v2
+- При наличии заголовка `X-Feature-Enabled: true` трафик направляется на v2
 
 ### 6. Проверка
 
