@@ -1,0 +1,38 @@
+{{- range $name, $config := .Values.deployments }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $.Release.Name }}-{{ $name }}
+  labels:
+    app: {{ $.Release.Name }}
+    version: {{ $config.version }}
+spec:
+  replicas: {{ $config.replicas }}
+  selector:
+    matchLabels:
+      app: booking-service
+      version: {{ $config.version }}
+  template:
+    metadata:
+      labels:
+        app: booking-service
+        version: {{ $config.version }}
+    spec:
+      containers:
+        - name: {{ $.Chart.Name }}
+          image: "{{ $.Values.image.name }}:{{ $.Values.image.tag }}"
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+
+          ports:
+            - containerPort: {{ $.Values.service.targetPort }}
+          resources:
+            {{- toYaml $.Values.resources | nindent 12 }}
+          livenessProbe:
+            {{- toYaml $.Values.livenessProbe | nindent 12 }}
+          readinessProbe:
+            {{- toYaml $.Values.readinessProbe | nindent 12 }}
+          env:
+            - name: ENABLE_FEATURE_X
+              value: "{{ $config.ENABLE_FEATURE_X }}"
+---
+{{- end }}

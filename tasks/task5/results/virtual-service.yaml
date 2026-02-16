@@ -1,0 +1,35 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: booking-service
+spec:
+  hosts:
+    - booking-service
+  http:
+    # 1. Feature flag: X-Feature-Enabled: true → всегда v2
+    - match:
+      - headers:
+          X-Feature-Enabled:
+            exact: "true"
+      route:
+        - destination:
+            host: booking-service
+            subset: v2
+
+    # 2. Канареечный маршрут по умолчанию: 90% v1 / 10% v2
+    #    При сбое v1 outlier detection исключает его,
+    #    и весь трафик уходит на v2 (fallback).
+    - route:
+        - destination:
+            host: booking-service
+            subset: v1
+          weight: 90
+        - destination:
+            host: booking-service
+            subset: v2
+          weight: 10
+      retries:
+        attempts: 5
+        perTryTimeout: 2s
+        retryOn: 5xx,connect-failure,refused-stream,gateway-error
+      timeout: 15s

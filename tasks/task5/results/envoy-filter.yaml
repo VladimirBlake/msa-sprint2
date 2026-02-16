@@ -1,0 +1,61 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: EnvoyFilter
+metadata:
+  name: booking-feature-flag
+  namespace: default
+spec:
+  workloadSelector:
+    labels:
+      app: booking-service
+  configPatches:
+    # Lua-фильтр: если заголовок X-Feature-Enabled == "true",
+    # устанавливаем заголовок маршрутизации для перенаправления на subset v2
+    - applyTo: HTTP_FILTER
+      match:
+        context: SIDECAR_INBOUND
+        listener:
+          filterChain:
+            filter:
+              name: envoy.filters.network.http_connection_manager
+              subFilter:
+                name: envoy.filters.http.router
+      patch:
+        operation: INSERT_BEFORE
+        value:
+          name: envoy.filters.http.lua
+          typed_config:
+            "@type": type.googleapis.com/envoy.extensions.filters.http.lua.v3.Lua
+            inline_code: |
+              function envoy_on_request(request_handle)
+                local feature_header = request_handle:headers():get("X-Feature-Enabled")
+                if feature_header == "true" then
+                  request_handle:headers():add("x-route-to", "v2")
+                  request_handle:logInfo("Feature flag enabled: routing to v2")
+                else
+                  request_handle:headers():add("x-route-to", "v1")
+                end
+              end
+
+    # Маршрутизация на уровне Envoy: направляем трафик на cluster v2,
+    # если заголовок X-Feature-Enabled == "true"
+    - applyTo: VIRTUAL_HOST
+      match:
+        context: SIDECAR_OUTBOUND
+        routeConfiguration:
+          vhost:
+            name: booking-service.default.svc.cluster.local:80
+      patch:
+        operation: MERGE
+        value:
+          routes:
+            - match:
+                prefix: /
+                headers:
+                  - name: X-Feature-Enabled
+                    exact_match: "true"
+              route:
+                cluster: outbound|80|v2|booking-service.default.svc.cluster.local
+            - match:
+                prefix: /
+              route:
+                cluster: outbound|80|v1|booking-service.default.svc.cluster.local

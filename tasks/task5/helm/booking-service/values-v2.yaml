@@ -1,0 +1,6 @@
+deployments:
+  v2:
+    replicas: 1
+    version: v2
+    ENABLE_FEATURE_X: true
+
