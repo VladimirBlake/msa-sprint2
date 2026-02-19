@@ -1,0 +1,60 @@
+@startuml
+!includeurl https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
+
+LAYOUT_WITH_LEGEND()
+title "Финальный этап миграции: Внедрение событийной архитектуры и дополнительных сервисов мониторинга и аналитики"
+
+Container(graphQLServer, "GraphQL Federation Server", "GraphQL Federation", "Шлюз для маршрутизации запросов между микросервисами и монолитом")
+Container(reverseProxy, "Reverse Proxy", "Nginx", "Обратный прокси для авторизации, маршрутизации и кэширования")
+Container(hotelsMicroservice, "Hotels Microservice", "Spring Boot", "Микросервис для управления информацией о гостиницах")
+ContainerDb(hotelsDb, "Hotels DB", "PostgreSQL", "База данных для хранения информации о гостиницах")
+
+Container(promocodeMicroservice, "Promocode Microservice", "Spring Boot", "Микросервис для управления информацией о промо-кодах")
+ContainerDb(promoDb, "Promocode DB", "MongoDB", "База данных для хранения информации о промо-кодах")
+
+Container(reviewMicroservice, "Review Microservice", "Spring Boot", "Микросервис для управления информацией о отзывах")
+ContainerDb(reviewDb, "Review DB", "MongoDB", "База данных для хранения информации о отзывах")
+
+Container(userMicroservice, "User Microservice", "Spring Boot", "Микросервис для управления информацией о пользователях")
+ContainerDb(userDb, "User DB", "PostgreSQL", "База данных для хранения информации о пользователях")
+
+Container(bookingMicroservice, "Booking Microservice", "Spring Boot", "Микросервис для управления информацией о бронированиях")
+ContainerDb(bookingDb, "Booking DB", "PostgreSQL", "База данных для хранения информации о бронированиях")
+
+Container(bookingAnalyticsService, "Booking Analytics Service", "Spring Boot", "Сервис для аналитики бронирований")
+ContainerDb(analyticsDb, "Analytics DB", "ClickHouse", "База данных для хранения аналитической информации о бронированиях")
+Container(monitoringService, "Monitoring Service", "Prometheus/Grafana", "Сервис для мониторинга состояния микросервисов")
+
+
+Person(user, "User", "Interacts with frontend")
+Rel(user, reverseProxy, "Sends requests to")
+Rel(reverseProxy, graphQLServer, "Forwards requests to")
+
+Container(kafka, "Брокер сообщений", "Kafka", "Брокер сообщений для коммуникации между микросервисами")
+
+Rel(graphQLServer, userMicroservice, "Proxies user-related requests from user")
+Rel(userMicroservice, userDb, "Reads/Writes user data to")
+
+Rel(graphQLServer, hotelsMicroservice, "Proxies hotel-related requests from user")
+Rel(hotelsMicroservice, hotelsDb, "Reads/Writes hotel data to")
+
+Rel(graphQLServer, promocodeMicroservice, "Proxies promocode-related requests from user")
+Rel(promocodeMicroservice, promoDb, "Reads/Writes promocode data to")
+
+Rel(graphQLServer, reviewMicroservice, "Proxies review-related requests from user")
+Rel(reviewMicroservice, reviewDb, "Reads/Writes review data to")
+
+Rel(graphQLServer, bookingMicroservice, "Proxies booking-related requests from user")
+Rel(bookingMicroservice, bookingDb, "Reads/Writes booking data to")
+
+Rel(bookingMicroservice, kafka, "Publishes booking events to")
+Rel(userMicroservice, kafka, "Subscribes to booking events from")
+Rel(hotelsMicroservice, kafka, "Subscribes to booking events from")
+Rel(promocodeMicroservice, kafka, "Subscribes to booking events from")
+Rel(reviewMicroservice, kafka, "Subscribes to booking events from")
+Rel_L(analyticsDb, bookingAnalyticsService, "Provides analytics data to")
+Rel(kafka, analyticsDb, "Transforms data into")
+Rel(kafka, monitoringService, "Sends metrics to")
+
+
+@enduml

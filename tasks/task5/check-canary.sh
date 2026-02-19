@@ -1,11 +1,11 @@
 #!/bin/bash
 
-set -e
+RETRIES=100
 
-echo "▶️ Checking canary release (90% v1, 10% v2)..."
-
-# Посылаем 100 запросов
-for i in {1..100}
-do
-    curl -s http://localhost:9090/ping
-done
+kubectl run curlpod --rm -it --image=curlimages/curl --restart=Never -- /bin/sh -c "
+echo 'Testing canary feature from inside cluster...';
+for i in \$(seq 1 $RETRIES); do
+  curl -s -H 'Host: booking-service' http://booking-service/feature;
+  echo;   # add a newline after each response
+done | sort | uniq -c
+"
